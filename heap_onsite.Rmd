@@ -192,7 +192,7 @@ heap %>%
   group_by(user_id) %>% 
   arrange(session_time) %>% 
   summarize(convert_first = if_else(
-    row_number() == 1 & converted == TRUE, "Yes",
+    first(converted) == TRUE, "Yes",
     "No"
     )
   ) %>% 
@@ -215,6 +215,17 @@ heap %>%
        y = "Number of Sessions",
        title = "See a 10.15% Conversion Rate Across All Sessions",
        subtitle = "Subsequent Comparisons Should Keep This Baseline in Mind")
+
+heap %>% 
+  group_by(user_id) %>% 
+  arrange(session_time) %>% 
+  summarize(convert_first = if_else(
+    row_number() == 1 & converted == TRUE, "Yes",
+    "No"
+    )
+  ) %>% 
+  count(user_id) %>% 
+  arrange(desc(n))
 
 ```
 
@@ -250,7 +261,8 @@ fac_vars <- heap %>%
 
 map(fac_vars, ~{
   heap %>% 
-    count(.data[[.x]])
+    count(.data[[.x]]) %>% 
+    arrange(desc(n))
 })
 
 ```
@@ -259,13 +271,159 @@ map(fac_vars, ~{
 
 ```{r}
 
+heap_grp <- heap %>% 
+  mutate(across(where(is.factor),as.character),
+    platform = case_when(
+    str_detect(platform, "Android") == TRUE ~ "Android",
+    str_detect(platform, "Chrome") == TRUE ~"Chrome",
+    str_detect(platform, "Firefox") == TRUE ~ "Firefox",
+    str_detect(platform, "iOS") == TRUE ~ "iOS",
+    str_detect(platform, "Mac OS") == TRUE ~ "Mac OS",
+    str_detect(platform, "Windows") == TRUE ~ "Windows",
+    platform == "Linux" | str_detect(platform, "Ubuntu") == TRUE ~ "Linux",
+    TRUE ~ platform
+    ),
+    country = case_when(
+      country == "United States" ~ "United States",
+      is.na(country) ~ NA_character_,
+      TRUE ~ "Outside US"
+    ),
+    marketing_viewed = case_when(
+      n_marketing_pages_viewed_before == 0 ~ "None",
+      n_marketing_pages_viewed_before == 1 ~ "One",
+      n_marketing_pages_viewed_before >= 2 ~ "More Than One",
+    )
+  )
 
+heap %>% 
+  count(n_marketing_pages_viewed_before)
+
+heap_grp %>% 
+  count(country)
+
+heap_grp %>% 
+  count(marketing_viewed)
 
 ```
 
+```{r}
+
+## Attempt to pivot
+
+heap_grp %>% 
+  select(platform, country, marketing_viewed, converted) %>% 
+  pivot_longer(
+    -converted,
+    names_to = "group_var",
+    values_to = "value"
+  ) %>%
+  group_by(group_var, value) %>% 
+  count(converted) %>% 
+  ungroup() %>% 
+  mutate(percent = (100 * n)/sum(n)) %>%
+  ggplot(aes(x = value, y = percent)) +
+  geom_col(fill = "#2E124D") +
+  coord_flip() +
+  facet_wrap(~group_var, ncol = 1, scales = "free") +
+  geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "#EE4860", family = "oswald") +
+  # geom_hline(yintercept = 857, color = "dodgerblue1") +
+  # annotate(geom = "text", x = 2, y = 1800, label = "Sample Conversion Rate\n10.15%", color = "dodgerblue1", family = "oswald") +
+  theme_dark() +
+   theme(legend.position = "none",
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        text = element_text(color = "white", family = "oswald"),
+        axis.text = element_text(color = "white", family = "oswald")) +
+   labs(x = "",
+       y = "",
+       title = "",
+       subtitle = "")
+
+```
+
+```{r}
+
+## Attempt to map through for visualization
+
+grp_vars <- c("platform", "country", "marketing_viewed")
+
+map(grp_vars, ~{
+  
+  heap_grp %>%
+  group_by(.data[[.x]]) %>%
+  summarize(converted = mean(converted, na.rm = TRUE),
+            num_sessions = n()) %>% 
+  filter(num_sessions > 100) %>% 
+  # mutate(
+  #       # percent = (100 * n)/sum(n),
+  #        converted = factor(case_when(
+  #           converted == FALSE ~ "Didn't Convert",
+  #           converted == TRUE ~ "Converted"
+  #         ))) %>%
+  ggplot(aes(x = .data[[.x]], y = converted)) +
+  geom_col(fill = "#2E124D") +
+  coord_flip() +
+  geom_text(aes(label = glue("{round(converted*100, 2)}%")), hjust = 1.1, color = "#EE4860", family = "oswald") +
+  # geom_hline(yintercept = 857, color = "dodgerblue1") +
+  # annotate(geom = "text", x = 2, y = 1800, label = "Sample Conversion Rate\n10.15%", color = "dodgerblue1", family = "oswald") +
+  theme_dark() +
+   theme(legend.position = "none",
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        text = element_text(color = "white", family = "oswald"),
+        axis.text = element_text(color = "white", family = "oswald")) +
+   labs(x = "",
+       y = "",
+       title = "",
+       subtitle = "")
+  
+})
 
 
 
+heap_grp %>%
+  group_by(country) %>%
+  summarize(converted = mean(converted, na.rm = TRUE),
+            num_sessions = n()) %>% 
+  filter(num_sessions > 100) %>% 
+  # mutate(
+  #       # percent = (100 * n)/sum(n),
+  #        converted = factor(case_when(
+  #           converted == FALSE ~ "Didn't Convert",
+  #           converted == TRUE ~ "Converted"
+  #         ))) %>%
+  ggplot(aes(x = country, y = converted, fill = num_sessions)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = glue("{round(converted*100, 2)}%")), hjust = 1.1, color = "#EE4860", family = "oswald") +
+  # geom_hline(yintercept = 857, color = "dodgerblue1") +
+  # annotate(geom = "text", x = 2, y = 1800, label = "Sample Conversion Rate\n10.15%", color = "dodgerblue1", family = "oswald") +
+  theme_dark() +
+   theme(legend.position = "top",
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        text = element_text(color = "white", family = "oswald"),
+        axis.text = element_text(color = "white", family = "oswald")) +
+   labs(x = "",
+       y = "",
+       title = "",
+       subtitle = "")
+
+```
+## Attempt to Do Formal Tests
+
+```{r}
+
+heap %>% 
+  group_by(platform) %>% 
+  arrange(session_time) %>% 
+  count(converted) %>% 
+  prop_test(convert_first ~ NULL, success = "Yes", p = .1015, z = TRUE) %>% 
+  print()
+
+p.adjust()
+
+```
 
 
 
