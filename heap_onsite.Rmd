@@ -184,6 +184,8 @@ heap %>%
 
 ## How Many Users Convert on Their First Visit Vs. Any Subsequent Visit?
 
+My goal is to do this once, then try to facet by potential comparisons in a future plot
+
 ```{r}
 
 heap %>% 
@@ -200,7 +202,9 @@ heap %>%
   ggplot(aes(x = convert_first, y = n)) +
   geom_col(fill = "#2E124D") +
   coord_flip() +
-  geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "white", family = "oswald") +
+  geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "#EE4860", family = "oswald") +
+  geom_hline(yintercept = 857, color = "dodgerblue1") +
+  annotate(geom = "text", x = 2, y = 1800, label = "Sample Conversion Rate\n10.15%", color = "dodgerblue1", family = "oswald") +
   theme_dark() +
    theme(legend.position = "none",
         panel.background = element_rect(fill = "black"),
@@ -213,6 +217,8 @@ heap %>%
        subtitle = "Subsequent Comparisons Should Keep This Baseline in Mind")
 
 ```
+
+
 
 
 ```{r}
