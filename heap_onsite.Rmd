@@ -136,7 +136,7 @@ heap %>%
   group_by(user_id)  %>% 
   summarize(sessions = n()) %>% 
   ggplot(aes(x = sessions)) +
-  geom_histogram(size = 3, fill = "#2E124D") +
+  geom_histogram(size = 3, fill = "#EE4860") +
   scale_x_log10() + 
   theme_dark() +
   theme(legend.position = "none",
@@ -159,11 +159,25 @@ Not by user, since users can have multiple sessions
 
 heap %>% 
   count(converted) %>% 
-   mutate(percent = (100 * n)/sum(n)) %>% 
-   ggplot(aes(x = convert_first, y = n)) +
-   geom_col() +
+   mutate(percent = (100 * n)/sum(n),
+          converted = case_when(
+            converted == FALSE ~ "Didn't Convert",
+            converted == TRUE ~ "Converted"
+          )) %>% 
+   ggplot(aes(x = converted, y = n)) +
+   geom_col(fill = "#2E124D") +
    coord_flip() +
-   geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "white", family = "oswald")
+   geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "#EE4860", family = "oswald") +
+   theme_dark() +
+   theme(legend.position = "none",
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        text = element_text(color = "white", family = "oswald"),
+        axis.text = element_text(color = "white", family = "oswald")) +
+   labs(x = "",
+       y = "Number of Sessions",
+       title = "See a 10.15% Conversion Rate Across All Sessions",
+       subtitle = "Subsequent Comparisons Should Keep This Baseline in Mind")
 
 
 ```
@@ -184,9 +198,19 @@ heap %>%
   count(convert_first = as.factor(convert_first)) %>%
   mutate(percent = (100 * n)/sum(n)) %>% 
   ggplot(aes(x = convert_first, y = n)) +
-  geom_col() +
+  geom_col(fill = "#2E124D") +
   coord_flip() +
-  geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "white", family = "oswald")
+  geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "white", family = "oswald") +
+  theme_dark() +
+   theme(legend.position = "none",
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        text = element_text(color = "white", family = "oswald"),
+        axis.text = element_text(color = "white", family = "oswald")) +
+   labs(x = "",
+       y = "Number of Sessions",
+       title = "See a 10.15% Conversion Rate Across All Sessions",
+       subtitle = "Subsequent Comparisons Should Keep This Baseline in Mind")
 
 ```
 
