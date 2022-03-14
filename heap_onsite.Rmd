@@ -220,7 +220,6 @@ heap %>%
 
 ## Formal Comparison of Proportion of Sessions That Convert First Session Vs. Any Subseqent Session by User
 
-
 ```{r}
 
 heap %>% 
@@ -232,12 +231,37 @@ heap %>%
     )
   ) %>% 
   ungroup() %>% 
-  prop_test(convert_first ~ NULL, p = .1015, z = TRUE) %>% 
+  count(convert_first = as.factor(convert_first)) %>% 
+  prop_test(convert_first ~ NULL, success = "Yes", p = .1015, z = TRUE) %>% 
   print()
 
 ```
+## Let's Iterate Over This Plot Across Multiple Kinds of Comparisons
+
+# Let's See What Comparisons are Feasible Given Timeline
+
+Can clean up platform, country, browser, utm_source, n_marketing_pages_viewed_before
+
+```{r}
+
+fac_vars <- heap %>% 
+  select(where(is.factor)) %>% 
+  names()
+
+map(fac_vars, ~{
+  heap %>% 
+    count(.data[[.x]])
+})
+
+```
+
+# Let's Clean Up These Grouping Variables
+
+```{r}
 
 
+
+```
 
 
 
