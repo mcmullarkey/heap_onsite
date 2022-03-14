@@ -1,0 +1,162 @@
+---
+title: "Heap Onsite Project"
+author: "Michael Mullarkey"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 5
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+geometry: margin=0.50in
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+require("knitr")
+knitr::opts_chunk$set(echo = TRUE, tidy = TRUE, warning = FALSE, message = FALSE, include = TRUE)
+```
+
+# Packages
+
+```{r}
+
+library(tidyverse)
+library(lubridate)
+library(skimr)
+library(showtext)
+library(ggdist)
+
+```
+
+# Live Coding at Beginning
+
+## Read in Data
+
+```{r}
+
+heap <- read_csv("heap-data-scientist-onsite.csv") %>% 
+  mutate(
+    across(
+      where(is.character),
+      factor
+      )
+    )
+
+```
+
+```{r}
+
+# One row for each session_id, most important is converted
+
+head(heap)
+
+View(heap)
+
+```
+
+```{r}
+
+heap %>% 
+  mutate(month = month(session_time)) %>% 
+  relocate(month, everything()) %>% 
+  group_by(month) %>% 
+  mutate(conversion_rate = mean(converted, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  distinct(month, .keep_all = TRUE) %>% 
+  ggplot(aes(x = month, y = conversion_rate)) + 
+  geom_line()
+
+
+heap %>% 
+  mutate(month = month(session_time)) %>% 
+  relocate(month, everything()) %>% 
+  group_by(month) %>% 
+  count(converted)
+
+
+prop.test(x = c(81, 120), n = c(343, 1514))
+
+```
+
+# Initial Notes
+
+Overall plan: Let's go for low hanging fruit first and then try to get fancy
+
+Low hanging fruit:
+
+Let's do sessions by users visualization
+
+Groupings with complete or nearly complete data that I don't have to engineer (can try pseudo R2, then fall back on more traditional stats if I have to)
+
+More complex ideas
+
+Do some KNN imputation to try to look at other groupings
+
+```{r}
+
+## Looking for insight not predictive power
+## Statistical rigor is a tool not an outcome 
+
+```
+
+## Inspecting Data
+
+```{r}
+
+skim(heap)
+
+```
+
+```{r}
+
+glimpse(heap)
+
+```
+
+
+## Visualizing Session Counts by User
+
+```{r}
+
+font_add_google("Oswald", "oswald")
+
+showtext_auto()
+
+heap %>% 
+  group_by(user_id)  %>% 
+  summarize(sessions = n()) %>% 
+  ggplot(aes(x = sessions)) +
+  geom_histogram(size = 3, fill = "#2E124D") +
+  scale_x_log10() + 
+  theme_dark() +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "black"),
+        plot.background = element_rect(fill = "black"),
+        text = element_text(color = "white", family = "oswald"),
+        axis.text = element_text(color = "white", family = "oswald")) +
+  labs(x = "Number of Sessions (Log Scale)",
+       y = "Count",
+       title = "Number of Sessions Per User is Hugely Left Skewed (Even on Log Scale)",
+       subtitle = "We Only Get One Shot With Most Potential Users in this Sample")
+  
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
