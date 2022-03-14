@@ -26,6 +26,8 @@ library(lubridate)
 library(skimr)
 library(showtext)
 library(ggdist)
+library(infer)
+library(glue)
 
 ```
 
@@ -89,7 +91,15 @@ Let's do sessions by users visualization
 
 Groupings with complete or nearly complete data that I don't have to engineer (can try pseudo R2, then fall back on more traditional stats if I have to)
 
+We can do that with device type
+
+We could also do that with number of marketing pages viewed as either >= 1 vs. 0
+
 More complex ideas
+
+Can try to create a function that generalizes across different numbers of groups for pseudo R2
+
+Try to clean uo platform and do comparisons there
 
 Do some KNN imputation to try to look at other groupings
 
@@ -113,7 +123,6 @@ skim(heap)
 glimpse(heap)
 
 ```
-
 
 ## Visualizing Session Counts by User
 
@@ -142,8 +151,61 @@ heap %>%
   
 
 ```
+## What's Our Average Conversion Rate by Session?
+
+Not by user, since users can have multiple sessions
+
+```{r}
+
+heap %>% 
+  count(converted) %>% 
+   mutate(percent = (100 * n)/sum(n)) %>% 
+   ggplot(aes(x = convert_first, y = n)) +
+   geom_col() +
+   coord_flip() +
+   geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "white", family = "oswald")
 
 
+```
+
+## How Many Users Convert on Their First Visit Vs. Any Subsequent Visit?
+
+```{r}
+
+heap %>% 
+  group_by(user_id) %>% 
+  arrange(session_time) %>% 
+  summarize(convert_first = if_else(
+    row_number() == 1 & converted == TRUE, "Yes",
+    "No"
+    )
+  ) %>% 
+  ungroup() %>% 
+  count(convert_first = as.factor(convert_first)) %>%
+  mutate(percent = (100 * n)/sum(n)) %>% 
+  ggplot(aes(x = convert_first, y = n)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = glue("{round(percent, 2)}%")), hjust = 1.1, color = "white", family = "oswald")
+
+```
+
+
+```{r}
+
+heap %>% 
+  group_by(user_id) %>% 
+  arrange(session_time) %>% 
+  summarize(convert_first = if_else(
+    row_number() == 1 & converted == TRUE, "Yes",
+    "No"
+    )
+  ) %>% 
+  ungroup() %>% 
+  prop_test(convert_first ~ NULL) %>% 
+  print()
+
+```
 
 
 
