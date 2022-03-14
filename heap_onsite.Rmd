@@ -218,7 +218,7 @@ heap %>%
 
 ```
 
-
+## Formal Comparison of Proportion of Sessions That Convert First Session Vs. Any Subseqent Session by User
 
 
 ```{r}
@@ -232,7 +232,7 @@ heap %>%
     )
   ) %>% 
   ungroup() %>% 
-  prop_test(convert_first ~ NULL) %>% 
+  prop_test(convert_first ~ NULL, p = .1015, z = TRUE) %>% 
   print()
 
 ```
